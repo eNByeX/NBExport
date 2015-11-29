@@ -1,12 +1,15 @@
 package io.github.enbyex.nbexport.exporter.txt;
 
 import io.github.enbyex.core.nbs.NBSHeader;
+import io.github.enbyex.core.nbs.NBSNote;
 import io.github.enbyex.core.nbs.NBSSong;
+import io.github.enbyex.core.util.Note;
 import io.github.enbyex.nbexport.api.Arguments;
 import io.github.enbyex.nbexport.api.exporter.Exporter;
 
 import javax.annotation.Nonnull;
 import java.io.*;
+import java.util.Optional;
 
 /**
  * @author soniex2
@@ -46,12 +49,12 @@ public class NBSSongTxtExporter implements Exporter<NBSSong> {
             chars[i] = '-';
         }
         pw.println(chars);
-        pw.printf("| Song: %-" + (len - 10) + "s |", header.getName());
+        pw.printf("| Song: %-" + (len - 10) + "s |", header.getName().replace('\n', ' '));
         pw.println();
-        pw.printf("| By: %-" + (len - 8) + "s |", header.getAuthor());
+        pw.printf("| By: %-" + (len - 8) + "s |", header.getAuthor().replace('\n', ' '));
         pw.println();
         if (!header.getOriginalAuthor().isEmpty()) {
-            pw.printf("| Originally by: %-" + (len - 19) + "s |", header.getOriginalAuthor());
+            pw.printf("| Originally by: %-" + (len - 19) + "s |", header.getOriginalAuthor().replace('\n', ' '));
             pw.println();
         }
         String fmtdescline = "| %-" + (len - 19) + "s |";
@@ -60,6 +63,27 @@ public class NBSSongTxtExporter implements Exporter<NBSSong> {
             pw.println();
         }
         pw.println(chars);
+        pw.flush();
+        int linelen = song.height() * 7 + 1;
+        char[] tsigline = new char[linelen];
+        for (int i = 0; i < linelen; i++) {
+            tsigline[i] = '-';
+            if (i % 7 == 0) tsigline[i] = '|';
+        }
+        int tsig = header.getTimeSignature();
+        for (int i = 0; i < song.length(); i++) {
+            if (i % tsig == 0) pw.println(tsigline);
+            for (int j = 0; j < song.height(); j++) {
+                Optional<NBSNote> note = song.getNote(i, j);
+                if (note.isPresent()) {
+                    NBSNote n = note.get();
+                    pw.printf("|%2d:%-3s", n.getInstrument(), Note.noteName(n.getNote()));
+                } else {
+                    pw.printf("|      ");
+                }
+            }
+            pw.println("|");
+        }
         pw.flush();
     }
 }
