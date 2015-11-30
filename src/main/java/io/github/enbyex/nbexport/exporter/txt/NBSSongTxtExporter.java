@@ -28,9 +28,12 @@ public class NBSSongTxtExporter implements Exporter<NBSSong> {
         BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream));
         PrintWriter pw = new PrintWriter(bufferedWriter);
         NBSHeader header = song.getHeader();
-        pw.println("--------------------------");
-        pw.println("| NBS TXT Exporter V 1.0 |");
-        pw.println("--------------------------");
+        pw.println(".------------------------.");
+        pw.println("| NBS TXT Exporter V 1.1 |");
+        pw.println("|------------------------|");
+        pw.printf("|  %1d custom instruments  |", song.instruments());
+        pw.println();
+        pw.println("|------------,-----------|");
         pw.printf("| TPS: %02d.%02d | tsig: %1d/4 |", header.getTempo() / 100, header.getTempo() % 100, header.getTimeSignature());
         pw.println();
         String[] lines = header.getDescription().split("\n");
@@ -48,7 +51,14 @@ public class NBSSongTxtExporter implements Exporter<NBSSong> {
         for (int i = 0; i < len; i++) {
             chars[i] = '-';
         }
+        chars[0] = '|';
+        chars[13] = '\'';
+        chars[25] = '\'';
+        if (chars.length != 26) chars[chars.length - 1] = '.';
         pw.println(chars);
+        chars[13] = '-';
+        chars[25] = '-';
+        if (chars.length != 26) chars[chars.length - 1] = '\'';
         pw.printf("| Song: %-" + (len - 10) + "s |", header.getName().replace('\n', ' '));
         pw.println();
         pw.printf("| By: %-" + (len - 8) + "s |", header.getAuthor().replace('\n', ' '));
@@ -62,18 +72,27 @@ public class NBSSongTxtExporter implements Exporter<NBSSong> {
             pw.printf(fmtdescline, line);
             pw.println();
         }
-        pw.println(chars);
-        pw.flush();
-        int linelen = song.height() * 7 + 1;
+        int linelen = song.songHeight() * 7 + 1;
         char[] tsigline = new char[linelen];
         for (int i = 0; i < linelen; i++) {
             tsigline[i] = '-';
-            if (i % 7 == 0) tsigline[i] = '|';
+            if (i % 7 == 0) {
+                if (i < chars.length) {
+                    chars[i] = ',';
+                }
+                if (i == chars.length - 1) {
+                    chars[i] = '|';
+                }
+                tsigline[i] = '|';
+            }
         }
+        chars[0] = '|';
+        pw.println(chars);
+        pw.flush();
         int tsig = header.getTimeSignature();
         for (int i = 0; i < song.length(); i++) {
-            if (i % tsig == 0) pw.println(tsigline);
-            for (int j = 0; j < song.height(); j++) {
+            if (i > 0 && i % tsig == 0) pw.println(tsigline);
+            for (int j = 0; j < song.songHeight(); j++) {
                 Optional<NBSNote> note = song.getNote(i, j);
                 if (note.isPresent()) {
                     NBSNote n = note.get();
